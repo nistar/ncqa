@@ -1,1 +1,2 @@
-Meven based Java project to certify NCQA rules
+A pilot python project to explore NCQA certification process. 
+
