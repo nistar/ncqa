@@ -13,7 +13,7 @@ class Filter:
         self.config = natus_config.NATUSConfig('ncqa')
         self.db_con = connector.Connector()
         self.member_filter = {}
-        self.load_filter()
+#        self.load_filter()
         self.value_set_cache = {}
 
     def load_filter(self):

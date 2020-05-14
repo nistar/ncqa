@@ -1,8 +1,7 @@
-import json
 from datetime import datetime
-from dotmap import DotMap
 from util import natus_config
 from db.mongo import connector
+from model.context import Context
 
 
 class BCS:
@@ -20,6 +19,7 @@ class BCS:
         self.anchor_date = eval(config.read_value(config_section_name, 'anchor.date'))
         continuous_enrollment_config = eval(config.read_value(config_section_name, "continuous.enrollment"))
         self.continuous_enrollment = natus_util.continuous_enrollment(continuous_enrollment_config)
+        self.age_rule = config.read_value(config_section_name, 'age_rule')
 
     def __str__(self):
         display = 'Anchor Date: ' + self.anchor_date.strftime('%Y-%m-%d') + ' Continuous Enrollment:'
@@ -29,9 +29,13 @@ class BCS:
                 '] Allowable Gap: ' + str(enrollment_year['AllowableGap']) + '; '
         return display
 
-    @staticmethod
-    def run(member: dict, context: DotMap):
-        pass
+    def age_eligible(self, context: Context) -> bool:
+        return eval(self.age_rule)
+
+    def run(self, member: dict, context: Context) -> None:
+        context.age_eligibility = self.age_eligible(context)
+        if not context.age_eligibility:
+            return
 
 
 if __name__ == '__main__':
