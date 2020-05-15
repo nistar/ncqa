@@ -15,15 +15,17 @@ class Context:
     ):
 
         from collections import defaultdict
+        from sortedcontainers import SortedList
         from db.mongo import connector
 
         self.run_date = run_date
         self.member: Member
-        self.enrollments: [Enrollment] = []
+        self.enrollments = SortedList([Enrollment])
         self.visits: [Visit] = []
         self.pharm = None
         self.mmdf: [MMDF] = []
         self.age_eligibility = False
+        self.ce_eligibility = False
         self.overlapping_enrollments = defaultdict(list)
         self.db_conn = connector.Connector()
 
@@ -62,7 +64,7 @@ class Context:
                 self.overlapping_enrollments[idx].append(overlap_enrollments)
             idx += 1
 
-        self.enrollments.append(Enrollment(enrolled_date_range, payer))
+        self.enrollments.add(Enrollment(enrolled_date_range, payer))
 
     def add_encounter(self, encounter: dict) -> None:
         service_date = datetime.fromisoformat(encounter['ServiceDate'])

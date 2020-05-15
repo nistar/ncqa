@@ -14,7 +14,7 @@ class Enrollment:
         return 'From: {} To: {}. Payer {}'.format(self.dates[0], self.dates[-1], self.payer)
 
     def __lt__(self, other) -> bool:
-        return self.dates[0] < other.dates_enrolled[0]
+        return self.dates[0] < other.dates[0]
 
 
 
