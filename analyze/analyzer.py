@@ -64,7 +64,36 @@ class Analyzer:
         for member_enrollment in member_enrollments:
             context.add_enrollment(member_enrollment)
 
-        context.has_dual_enrollments()
+    @staticmethod
+    def init_visits(
+            member: dict,
+            context: Context
+    ) -> None:
+
+        if 'visits' in member:
+            for visit in member['visits']:
+                if visit['ServiceDate'] is None:
+                    continue
+                context.add_encounter(visit)
+
+    @staticmethod
+    def init_pharm(
+            member: dict,
+            context: Context
+    ) -> None:
+        if 'pharm' in member:
+            pharm = member['pharm']
+            context.add_pharm(pharm)
+
+    @staticmethod
+    def init_mmdf(
+            member: dict,
+            context: Context
+    ) -> None:
+        if 'HospiceLti' in member:
+            mmdfs = member['HospiceLti']
+            for mmdf in mmdfs:
+                context.add_mmdf(mmdf)
 
     @staticmethod
     def dates_overlap(enrollments: [Enrollment]):
@@ -96,11 +125,15 @@ class Analyzer:
             context: Context
     ) -> None:
         # init context
-        from util import natus_util
-        from pandas import date_range
 
         self.init_member(member, context)
         self.init_enrollments(member, context)
+        self.init_visits(member, context)
+        self.init_pharm(member, context)
+        self.init_mmdf(member, context)
+
+        for measure in self.measure_pipeline:
+            measure.run(member, context)
 
         # member_context = dotmap.DotMap(json.loads(self.member_context_config))
         # member_context.RunDate = self.run_date
