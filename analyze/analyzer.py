@@ -133,41 +133,7 @@ class Analyzer:
         self.init_mmdf(member, context)
 
         for measure in self.measure_pipeline:
-            measure.run(member, context)
-
-        # member_context = dotmap.DotMap(json.loads(self.member_context_config))
-        # member_context.RunDate = self.run_date
-        # member_context.Member.MemberId = member['MemberId']
-        #
-        # member_context.AnchorDate.Date = datetime(
-        #     self.run_date.year,
-        #     member_context.AnchorDate.Month,
-        #     member_context.AnchorDate.Day
-        # )
-        #
-        # continuous_enrollment_year_range = natus_util.measurement_year_range(
-        #     member_context.RunDate,
-        #     member_context.ContinuousEnrollmentDateRanges
-        # )
-        #
-        # for continuous_enrollment_year in continuous_enrollment_year_range:
-        #     idx = natus_util.measurement_year_index(
-        #         continuous_enrollment_year_range,
-        #         continuous_enrollment_year)
-        #     member_context.ContinuousEnrollmentDateRanges[idx].DateRange = date_range(
-        #         datetime(
-        #             continuous_enrollment_year,
-        #             member_context.ContinuousEnrollmentDateRanges[idx].StartMonth,
-        #             member_context.ContinuousEnrollmentDateRanges[idx].StartDay
-        #         ),
-        #         datetime(
-        #             continuous_enrollment_year,
-        #             member_context.ContinuousEnrollmentDateRanges[idx].EndMonth,
-        #             member_context.ContinuousEnrollmentDateRanges[idx].EndDay
-        #         )
-        #     )
-        #
-        # self.exclude_filter.process_exclusions(member, member_context)
+            measure.run(context)
 
     def start(self, member_id: str):
         ctx = Context(self.run_date)
