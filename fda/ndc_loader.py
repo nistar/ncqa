@@ -9,7 +9,6 @@ class NDCLoader:
         self.log = natus_logging.NATUSLogging(__class__.__name__, logging.INFO)
         self.config = natus_config.NATUSConfig('ncqa')
         self.db_con = connector.Connector()
-        self.db_con.collection_name = 'ndc'
         self.input_filename = self.config.read_value('ndc', 'input.csv.filename')
 
     def convert_to_11_digit(
@@ -57,7 +56,7 @@ class NDCLoader:
                 'NDC': key,
                 'DrugNames': value
             }
-            self.db_con.insert(mapping)
+            self.db_con.insert(mapping, 'ndc')
 
 
 if __name__ == '__main__':

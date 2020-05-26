@@ -21,11 +21,20 @@ class Context:
         self.run_date = run_date
         self.member: Member
         self.enrollments = SortedList([Enrollment])
-        self.visits: [Visit] = []
+        self.visits = SortedList([Visit])
         self.pharm = None
         self.mmdf: [MMDF] = []
         self.age_eligibility = False
         self.ce_eligibility = False
+        self.enrolled_in_snp = False
+        self.required_exclusion = False
+        self.long_term_institution = False
+        self.gaps_in_care = False
+        self.frailty = False
+        self.advanced_illness = False
+        self.anchor_date_eligibility = False
+        self.on_dementia_meds = False
+        self.bilateral_mastectomy = False
         self.overlapping_enrollments = defaultdict(list)
         self.db_conn = connector.Connector()
 
@@ -37,6 +46,17 @@ class Context:
         self.overlapping_enrollments.clear()
         self.visits.clear()
         self.mmdf.clear()
+        self.age_eligibility = False
+        self.ce_eligibility = False
+        self.enrolled_in_snp = False
+        self.required_exclusion = False
+        self.long_term_institution = False
+        self.gaps_in_care = False
+        self.frailty = False
+        self.advanced_illness = False
+        self.pharm = None
+        self.on_dementia_meds = False
+        self.bilateral_mastectomy = False
 
     def add_enrollment(self, enrollment: dict) -> None:
         from pandas import date_range
@@ -69,7 +89,7 @@ class Context:
     def add_encounter(self, encounter: dict) -> None:
         service_date = datetime.fromisoformat(encounter['ServiceDate'])
         agg_codes = encounter['AggregatedCodes']
-        self.visits.append(Visit(service_date, agg_codes))
+        self.visits.add(Visit(service_date, agg_codes, encounter['CptMod1']))
 
     def add_pharm(self, pharm: dict) -> None:
         service_date = datetime.fromisoformat(pharm['ServiceDate'])

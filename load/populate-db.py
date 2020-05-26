@@ -20,7 +20,7 @@ class PopulateDb:
         docs_to_insert = []
         for doc in self.documents:
             if inserted_docs == int(self.bulk_size):
-                self.db_connection.bulk_insert(docs_to_insert)
+                self.db_connection.bulk_insert(docs_to_insert, 'member')
                 docs_to_insert.clear()
                 inserted_docs = 0
             else:
@@ -28,7 +28,7 @@ class PopulateDb:
                 inserted_docs += 1
 
         # insert last batch
-        self.db_connection.bulk_insert(docs_to_insert)
+        self.db_connection.bulk_insert(docs_to_insert, 'member')
 
     def read_merged_data(self):
         with open(self.input_file_name) as input_file:
