@@ -138,12 +138,10 @@ class BCS:
         visit_codes = set(visit.codes)
 
         if bool(visit_codes.intersection(self.bilateral_mastectomy_codes)):
-            context.bilateral_mastectomy = True
-            return
+            optional_excl.BilateralMastectomy.append(visit.service_date)
 
         if bool(visit_codes.intersection(self.history_of_bilateral_mastectomy_codes)):
-            context.bilateral_mastectomy = True
-            return
+            optional_excl.HistoryOfBilateralMastectomy.append(visit.service_date)
 
         # with left modifier
         if bool(visit_codes.intersection(self.unilateral_mastectomy_left_codes)):
@@ -153,19 +151,23 @@ class BCS:
         if bool(visit_codes.intersection(self.unilateral_mastectomy_right_codes)):
             optional_excl.UnilateralMastectomyRight.append(visit.service_date)
 
+        if bool(visit_codes.intersection([self.absence_of_left_breast[0]['code']])):
+            optional_excl.AbsenceOfLeftBreast.append(visit.service_date)
+
+        if bool(visit_codes.intersection([self.absence_of_right_breast[0]['code']])):
+            optional_excl.AbsenceOfRightBreast.append(visit.service_date)
+
+        if visit.modifier == self.bilateral_modifier[0]['code']:
+            optional_excl.BilateralModifier.append(visit.service_date)
+
+        if visit.modifier == self.left_modifier[0]['code']:
+            optional_excl.LeftModifier.append(visit.service_date)
+
+        if visit.modifier == self.right_modifier[0]['code']:
+            optional_excl.RightModifier.append(visit.service_date)
+
         if bool(visit_codes.intersection(self.unilateral_mastectomy_codes)):
-
-            if visit.modifier == self.bilateral_modifier[0]['code']:
-                context.bilateral_mastectomy = True
-                return
-
-            if visit.modifier == self.left_modifier[0]['code']:
-                optional_excl.UnilateralMastectomyWithLeftModifier.append(visit.service_date)
-            elif visit.modifier == self.right_modifier[0]['code']:
-                optional_excl.UnilateralMastectomyWithRightModifier.append(visit.service_date)
-            else:
-                # no modifier
-                optional_excl.UnilateralMastectomyWithoutModifier.append(visit.service_date)
+            optional_excl.UnilateralMastectomy.append(visit.service_date)
 
     def visit(self, context: Context) -> None:
 
@@ -195,10 +197,22 @@ class BCS:
                     inpatient_visit_counter += 1
 
         if not optional_excl.empty():
-            print(optional_excl)
+            context.optional_exclusions = self.optional_exclusions(optional_excl)
 
         if outpatient_visit_counter >= 2 or inpatient_visit_counter >= 1:
             context.advanced_illness = True
+
+    @staticmethod
+    def optional_exclusions(opt_excl: optional_exclusions.OptionalExclusions) -> bool:
+        if opt_excl.history_of_bilateral_mastectomy() or opt_excl.bilateral_mastectomy() or \
+                opt_excl.unilateral_mastectomy_with_bilateral_mod() or \
+                opt_excl.two_unilateral_mastectomies_without_mod() or \
+                opt_excl.unilateral_mastectomy_without_mod_and_right_mastectomy() or \
+                opt_excl.unilateral_mastectomy_without_mod_and_left_mastectomy() or \
+                opt_excl.left_and_right_mastectomy():
+            return True
+
+        return False
 
     @staticmethod
     def dementia_meds(context: Context) -> None:

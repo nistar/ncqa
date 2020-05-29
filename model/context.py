@@ -35,6 +35,7 @@ class Context:
         self.anchor_date_eligibility = False
         self.on_dementia_meds = False
         self.bilateral_mastectomy = False
+        self.optional_exclusions = False
         self.overlapping_enrollments = defaultdict(list)
         self.db_conn = connector.Connector()
 
@@ -57,6 +58,7 @@ class Context:
         self.pharm = None
         self.on_dementia_meds = False
         self.bilateral_mastectomy = False
+        self.optional_exclusions = False
 
     def add_enrollment(self, enrollment: dict) -> None:
         from pandas import date_range
