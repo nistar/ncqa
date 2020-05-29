@@ -3,7 +3,7 @@ from util import natus_config
 from db.mongo import connector
 from model.context import Context
 from model.visit import Visit
-from collections import Counter
+from model import optional_exclusions
 
 
 class BCS:
@@ -62,8 +62,10 @@ class BCS:
         self.absence_of_left_breast = connection.find('vs_name', 'Absence of Left Breast', 'vs_to_codes')['codes']
         self.unilateral_mastectomy_right = connection.find('vs_name', 'Unilateral Mastectomy Right',
                                                            'vs_to_codes')['codes']
+        self.unilateral_mastectomy_right_codes = set([x['code'] for x in self.unilateral_mastectomy_right])
         self.unilateral_mastectomy_left = connection.find('vs_name', 'Unilateral Mastectomy Left',
                                                           'vs_to_codes')['codes']
+        self.unilateral_mastectomy_left_codes = set([x['code'] for x in self.unilateral_mastectomy_left])
 
     def age_eligible(self, context: Context) -> None:
         context.age_eligibility = eval(self.age_rule)
@@ -131,45 +133,50 @@ class BCS:
             self,
             visit: Visit,
             context: Context,
-            unilateral_mastectomy_dates: list,
-            mastectomy_counter: Counter
+            optional_excl: optional_exclusions.OptionalExclusions
     ) -> None:
         visit_codes = set(visit.codes)
 
         if bool(visit_codes.intersection(self.bilateral_mastectomy_codes)):
-            context.bilateral_mastectomy = True
-            return
-
-        if bool(visit_codes.intersection(self.unilateral_mastectomy_codes)) and \
-                visit.modifier == self.bilateral_modifier[0]['code']:
-            context.bilateral_mastectomy = True
-            return
-
-        if bool(visit_codes.intersection(self.unilateral_mastectomy_codes)):
-            if not unilateral_mastectomy_dates:
-                unilateral_mastectomy_dates.append(visit.service_date)
-                if visit.modifier == self.left_modifier[0]['code']:
-                    mastectomy_counter['lm'] = 1
-                return
-            else:
-                difference_in_days = (visit.service_date - unilateral_mastectomy_dates[-1]).days
-                if difference_in_days >= 14:
-                    context.bilateral_mastectomy = True
-                return
+            optional_excl.BilateralMastectomy.append(visit.service_date)
 
         if bool(visit_codes.intersection(self.history_of_bilateral_mastectomy_codes)):
-            context.bilateral_mastectomy = True
-            return
+            optional_excl.HistoryOfBilateralMastectomy.append(visit.service_date)
+
+        # with left modifier
+        if bool(visit_codes.intersection(self.unilateral_mastectomy_left_codes)):
+            optional_excl.UnilateralMastectomyLeft.append(visit.service_date)
+
+        # with right modifier
+        if bool(visit_codes.intersection(self.unilateral_mastectomy_right_codes)):
+            optional_excl.UnilateralMastectomyRight.append(visit.service_date)
+
+        if bool(visit_codes.intersection([self.absence_of_left_breast[0]['code']])):
+            optional_excl.AbsenceOfLeftBreast.append(visit.service_date)
+
+        if bool(visit_codes.intersection([self.absence_of_right_breast[0]['code']])):
+            optional_excl.AbsenceOfRightBreast.append(visit.service_date)
+
+        if visit.modifier == self.bilateral_modifier[0]['code']:
+            optional_excl.BilateralModifier.append(visit.service_date)
+
+        if visit.modifier == self.left_modifier[0]['code']:
+            optional_excl.LeftModifier.append(visit.service_date)
+
+        if visit.modifier == self.right_modifier[0]['code']:
+            optional_excl.RightModifier.append(visit.service_date)
+
+        if bool(visit_codes.intersection(self.unilateral_mastectomy_codes)):
+            optional_excl.UnilateralMastectomy.append(visit.service_date)
 
     def visit(self, context: Context) -> None:
 
         outpatient_visit_counter = 0
         inpatient_visit_counter = 0
-        unilateral_mastectomy_dates = []
-        mastectomy_counter = Counter()
+        optional_excl = optional_exclusions.OptionalExclusions()
 
         for visit in context.visits:
-            self.had_bilateral_mastectomy(visit, context, unilateral_mastectomy_dates, mastectomy_counter)
+            self.had_bilateral_mastectomy(visit, context, optional_excl)
             if visit.service_date.year == context.run_date.year \
                     and bool(set(visit.codes).intersection(self.frailty_codes)):
                 context.frailty = True
@@ -189,8 +196,23 @@ class BCS:
 
                     inpatient_visit_counter += 1
 
+        if not optional_excl.empty():
+            context.optional_exclusions = self.optional_exclusions(optional_excl)
+
         if outpatient_visit_counter >= 2 or inpatient_visit_counter >= 1:
             context.advanced_illness = True
+
+    @staticmethod
+    def optional_exclusions(opt_excl: optional_exclusions.OptionalExclusions) -> bool:
+        if opt_excl.history_of_bilateral_mastectomy() or opt_excl.bilateral_mastectomy() or \
+                opt_excl.unilateral_mastectomy_with_bilateral_mod() or \
+                opt_excl.two_unilateral_mastectomies_without_mod() or \
+                opt_excl.unilateral_mastectomy_without_mod_and_right_mastectomy() or \
+                opt_excl.unilateral_mastectomy_without_mod_and_left_mastectomy() or \
+                opt_excl.left_and_right_mastectomy():
+            return True
+
+        return False
 
     @staticmethod
     def dementia_meds(context: Context) -> None:
